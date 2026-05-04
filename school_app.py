@@ -221,7 +221,6 @@ elif selected == "🗓 Смарт-кесте & Кадрлар":
     with tab2:
         st.write("### 👥 Мұғалімдерді басқару")
         
-        # --- ЖАҢА МҰҒАЛІМ ҚОСУ БӨЛІМІ ---
         with st.expander("➕ Жаңа мұғалім қосу"):
             t_col1, t_col2, t_col3 = st.columns([2, 2, 1])
             with t_col1:
@@ -314,14 +313,30 @@ elif selected == "🔮 ЖИ Болжау Орталығы":
         else:
             st.error(f"**ҚАТЕР:** Төмен нәтиже. Ата-анамен психологиялық кеңес өткізу қажет.")
 
-# 4. SMART ЭКОСИСТЕМА
+# 4. SMART ЭКОСИСТЕМА (ИНТЕРАКТИВТІ НҰСҚА)
 elif selected == "💡 Smart Экосистема":
     st.title("💡 Ресурстарды бақылау және Экология")
     
+    # --- ЖАҢА: ПАРАМЕТРЛЕРДІ БАСҚАРУ ПАНЕЛІ ---
+    with st.expander("⚙️ Экосистема параметрлерін реттеу"):
+        set_col1, set_col2, set_col3 = st.columns(3)
+        with set_col1:
+            power_save = st.slider("Электр үнемдеу (%)", 0, 100, 22)
+            temp_val = st.number_input("Орташа температура (°C)", 15.0, 30.0, 21.5)
+        with set_col2:
+            water_cons = st.number_input("Су шығыны (литр)", 0, 2000, 450)
+            co2_input = st.slider("CO2 деңгейі (ppm)", 300, 1500, 720)
+        with set_col3:
+            paper_w = st.number_input("Қағаз қалдығы (кг)", 0, 200, 55)
+            plastic_w = st.number_input("Пластик қалдығы (кг)", 0, 200, 20)
+
+    st.markdown("---")
+
+    # Метрикалар
     col_res1, col_res2, col_res3 = st.columns(3)
-    col_res1.metric("💡 Электр", "Үнем: 22%", "ЖИ Бақылау")
-    col_res2.metric("🌡️ Орташа темп.", "21.5°C", "Қалыпты")
-    col_res3.metric("💧 Су шығыны", "450 л", "-12%")
+    col_res1.metric("💡 Электр", f"Үнем: {power_save}%", "ЖИ Бақылау")
+    col_res2.metric("🌡️ Орташа темп.", f"{temp_val}°C", "Қалыпты" if 18 <= temp_val <= 24 else "Ауытқу")
+    col_res3.metric("💧 Су шығыны", f"{water_cons} л", f"{450 - water_cons} л айырма")
     
     st.markdown("---")
     
@@ -330,25 +345,28 @@ elif selected == "💡 Smart Экосистема":
     
     with col_air:
         st.write("### 🌬️ Ауа сапасы (CO2)")
-        co2_val = 720 
-        st.progress(co2_val / 1200)
-        if co2_val < 800:
-            st.success(f"✅ Деңгей: {co2_val} ppm. Ауа таза!")
+        st.progress(co2_input / 1500)
+        if co2_input < 800:
+            st.success(f"✅ Деңгей: {co2_input} ppm. Ауа таза!")
+        elif co2_input < 1000:
+            st.warning(f"⚠️ Деңгей: {co2_input} ppm. Орташа, желдету ұсынылады.")
         else:
-            st.warning(f"⚠️ Деңгей: {co2_val} ppm. Желдету ұсынылады!")
+            st.error(f"🚨 Деңгей: {co2_input} ppm. Критикалық! Тез арада желдетіңіз!")
             
     with col_waste:
         st.write("### ♻️ Қалдықтарды сұрыптау (кг)")
         waste_df = pd.DataFrame({
             'Түрі': ['Қағаз', 'Пластик', 'Басқа'],
-            'Көлемі': [55, 20, 10]
+            'Көлемі': [paper_w, plastic_w, 10]
         })
         fig_waste = px.pie(waste_df, values='Көлемі', names='Түрі', 
-                           hole=0.4, color_discrete_sequence=px.colors.sequential.Tealgrn)
+                            hole=0.4, color_discrete_sequence=px.colors.sequential.Tealgrn)
         fig_waste.update_layout(height=250, margin=dict(l=0, r=0, t=0, b=0))
         st.plotly_chart(fig_waste, use_container_width=True)
 
-    st.info("💡 **ЖИ Кеңесі:** Соңғы 2 сағатта 2-қабатта жарық босқа қосулы тұр. Автоматты өшіру ұсынылады.")
+    # Динамикалық ЖИ кеңесі
+    efficiency = (power_save + (100 - (co2_input/15)) + (100 - (abs(21-temp_val)*10))) / 3
+    st.info(f"💡 **ЖИ Кеңесі:** Соңғы деректер бойынша мектептің экологиялық тиімділігі {max(0, min(100, efficiency)):.1f}% құрады.")
 
 # 5. AI КОНСУЛЬТАНТ
 elif selected == "🤖 AI Консультант":
