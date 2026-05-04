@@ -48,7 +48,7 @@ st.set_page_config(
 
 # ПАЙДАЛАНУШЫ СЕССИЯСЫ
 if 'user_name' not in st.session_state:
-    st.session_state.user_name = "Директор мырза"
+    st.session_state.user_name = "Асель"
 
 # КЕҢЕЙТІЛГЕН ПӘНДЕР ТІЗІМІ
 if 'subject_data' not in st.session_state:
@@ -67,6 +67,37 @@ if 'teachers_list' not in st.session_state:
         'Пәні': ['Математика', 'Физика', 'IT', 'Қазақстан тарихы'],
         'Рейтинг': [4.9, 4.7, 4.9, 4.2]
     })
+
+# --- КЕҢЕЙТІЛГЕН ОҚУШЫЛАР МӘЛІМЕТТЕРІ ---
+students_db = {
+    "9-А": {
+        "Аманжол Ернар": {"attendance": 88, "gpa": 75},
+        "Серікболқызы Мадина": {"attendance": 94, "gpa": 91},
+        "Тұрсынхан Әли": {"attendance": 70, "gpa": 62},
+        "Берікқажы Айша": {"attendance": 96, "gpa": 89},
+        "Жұмағұл Дамир": {"attendance": 82, "gpa": 70}
+    },
+    "10-А": {
+        "Асель Мейремхан": {"attendance": 98, "gpa": 96},
+        "Арман Болат": {"attendance": 85, "gpa": 78},
+        "Диана Серік": {"attendance": 92, "gpa": 88},
+        "Нұрланов Темірлан": {"attendance": 75, "gpa": 68},
+        "Смағұл Ерасыл": {"attendance": 90, "gpa": 84}
+    },
+    "11-Б": {
+        "Бауыржан Иса": {"attendance": 72, "gpa": 65},
+        "Айлин Мұрат": {"attendance": 99, "gpa": 97},
+        "Санжар Әли": {"attendance": 88, "gpa": 82},
+        "Кәрімжан Меруерт": {"attendance": 95, "gpa": 93},
+        "Оспанов Бахтияр": {"attendance": 80, "gpa": 74}
+    },
+    "11-В (Физ-Мат)": {
+        "Байжанов Даурен": {"attendance": 91, "gpa": 85},
+        "Ермекова Гүлназ": {"attendance": 97, "gpa": 94},
+        "Сәкенұлы Расул": {"attendance": 84, "gpa": 79},
+        "Әуесхан Сабина": {"attendance": 100, "gpa": 98}
+    }
+}
 
 # 2. ПРЕМЬЕР-ДИЗАЙН (CSS)
 st.markdown("""
@@ -125,7 +156,6 @@ if selected == "🏛 Басты панель":
                      color_continuous_scale='Viridis', text_auto=True)
         st.plotly_chart(fig, use_container_width=True)
         
-        # --- ЖАҢА: ПӘН ҚОСУ БАТЫРМАСЫ ---
         st.write("---")
         st.subheader("➕ Жаңа пән мәліметтерін енгізу")
         new_col1, new_col2, new_col3 = st.columns([2, 1, 1])
@@ -134,7 +164,7 @@ if selected == "🏛 Басты панель":
         with new_col2:
             new_score = st.number_input("Көрсеткіш:", min_value=0, max_value=100, value=85)
         with new_col3:
-            st.write(" ") # Бос орын теңестіру үшін
+            st.write(" ")
             if st.button("Тізімге қосу"):
                 if new_subject:
                     new_row = pd.DataFrame({'Пән': [new_subject], 'Көрсеткіш': [new_score]})
@@ -154,7 +184,6 @@ if selected == "🏛 Басты панель":
 # 2. КЕСТЕ ЖӘНЕ КАДРЛАР
 elif selected == "🗓 Смарт-кесте & Кадрлар":
     st.title("🗓 Кадрлар және Кесте")
-    
     pdf = create_pdf("Кадрлық есеп", {"Мұғалімдер саны": len(st.session_state.teachers_list)})
     st.download_button("📄 PDF Жүктеу", pdf, file_name="staff.pdf")
 
@@ -170,11 +199,7 @@ elif selected == "🗓 Смарт-кесте & Кадрлар":
         
         st.write("📖 **Кестеге қосылатын пәндерді таңдаңыз:**")
         available_subjects = st.session_state.subject_data['Пән'].tolist()
-        selected_subjects = st.multiselect(
-            "Пәндер тізімі (таңдалмаса, барлығы қолданылады):", 
-            options=available_subjects,
-            default=None
-        )
+        selected_subjects = st.multiselect("Пәндер тізімі:", options=available_subjects, default=None)
 
         if st.button("ЖИ арқылы кестені құрастыру"):
             with st.spinner('Смарт-талдау жүргізілуде...'):
@@ -183,19 +208,12 @@ elif selected == "🗓 Смарт-кесте & Кадрлар":
                 working_list = target_list.copy()
                 np.random.shuffle(working_list)
                 
-                final_subjects = []
-                for i in range(6):
-                    if i < len(working_list):
-                        final_subjects.append(working_list[i])
-                    else:
-                        final_subjects.append("-")
-
+                final_subjects = [working_list[i] if i < len(working_list) else "-" for i in range(6)]
                 sched = pd.DataFrame({
                     'Сабақ №': ['1', '2', '3', '4', '5', '6'],
                     'Уақыт': ['08:30', '09:25', '10:20', '11:15', '12:10', '13:05'],
                     f'{class_select} ({day_select})': final_subjects
                 })
-                
                 st.success(f"Кесте сәтті құрастырылды!")
                 st.table(sched)
                 st.balloons()
@@ -209,19 +227,78 @@ elif selected == "🗓 Смарт-кесте & Кадрлар":
         ]
         st.dataframe(filtered_t, use_container_width=True)
 
-# 3. ЖИ БОЛЖАУ
+# 3. ЖИ БОЛЖАУ (КЕҢЕЙТІЛГЕН НҰСҚА)
 elif selected == "🔮 ЖИ Болжау Орталығы":
-    st.title("🔮 AI Predictive Center")
+    st.title("🔮 AI Student Performance Analytics")
+    st.markdown("---")
+    
     col_x, col_y = st.columns([1, 1])
+    
     with col_x:
-        st.subheader("Оқушы профилі")
-        name = st.text_input("Есімі:", "Асель Мейремхан")
-        attendance = st.slider("Қатысу (%)", 0, 100, 95)
-        test = st.slider("БЖБ бағасы", 0, 100, 92)
-        final = (attendance * 0.4) + (test * 0.6)
+        st.subheader("📋 Оқушы таңдау панелі")
+        # Сыныпты таңдау
+        selected_class = st.selectbox("Сыныпты таңдаңыз:", list(students_db.keys()))
+        
+        # Сол сыныптың оқушылары
+        available_students = list(students_db[selected_class].keys())
+        selected_student = st.selectbox("Оқушының аты-жөні:", available_students)
+        
+        # Таңдалған оқушының деректері
+        student_info = students_db[selected_class][selected_student]
+        
+        st.write("---")
+        st.subheader("⚙️ Болжамды модельдеу")
+        st.write("_Бұл параметрлерді өзгерту арқылы болашақ нәтижені болжауға болады:_")
+        
+        # Интерактивті слайдерлер
+        curr_attendance = st.slider("Қатысу көрсеткіші (%)", 0, 100, student_info["attendance"])
+        curr_gpa = st.slider("Академиялық үлгерім (0-100)", 0, 100, student_info["gpa"])
+        
+        # Болжамдық есептеу (Алгоритм)
+        # Білімге басымдық береміз: 65% GPA + 35% Attendance
+        prediction = (curr_attendance * 0.35) + (curr_gpa * 0.65)
+
     with col_y:
-        st.subheader(f"Болжам: {final:.1f}%")
-        st.plotly_chart(go.Figure(go.Indicator(mode="gauge+number", value=final)), use_container_width=True)
+        st.subheader(f"📊 Болжамдық есеп: {selected_student}")
+        
+        # Визуалды индикатор
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number+delta",
+            value=prediction,
+            delta={'reference': 85}, # Орташа мектеп деңгейімен салыстыру
+            domain={'x': [0, 1], 'y': [0, 1]},
+            title={'text': "Жалпы үлгерім индексі", 'font': {'size': 18}},
+            gauge={
+                'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
+                'bar': {'color': "#1e3a8a"},
+                'bgcolor': "white",
+                'borderwidth': 2,
+                'bordercolor': "gray",
+                'steps': [
+                    {'range': [0, 50], 'color': '#ffcfcf'},
+                    {'range': [50, 80], 'color': '#fff4cf'},
+                    {'range': [80, 100], 'color': '#cfffcf'}
+                ],
+                'threshold': {
+                    'line': {'color': "red", 'width': 4},
+                    'thickness': 0.75,
+                    'value': 95
+                }
+            }
+        ))
+        fig.update_layout(height=350)
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # ЖИ ТҰЖЫРЫМДАМАСЫ
+        st.markdown("### 🤖 ЖИ Сараптамасы:")
+        if prediction >= 90:
+            st.success(f"**ҚОРЫТЫНДЫ:** {selected_student} жоғары академиялық потенциалға ие. Жобалық жұмыстарға тарту ұсынылады.")
+        elif prediction >= 75:
+            st.info(f"**ҚОРЫТЫНДЫ:** Оқушының көрсеткіштері тұрақты. Пәндік олимпиадаларға дайындық бастауға болады.")
+        elif prediction >= 50:
+            st.warning(f"**ҚОРЫТЫНДЫ:** Орташа деңгей. Қатысу көрсеткішін көтеріп, бақылау жұмыстарына көңіл бөлу керек.")
+        else:
+            st.error(f"**ҚАТЕР:** Төмен нәтиже. Ата-анамен психологиялық кеңес өткізу қажет.")
 
 # 4. SMART ЭКОСИСТЕМА
 elif selected == "💡 Smart Экосистема":
