@@ -11,19 +11,19 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import os
 
-# --- PDF ГЕНЕРАЦИЯЛАУ ФУНКЦИЯСЫ (ҚАЗАҚША ҚАРІППЕН ТҮЗЕТІЛГЕН НҰСҚА) ---
+# --- PDF ГЕНЕРАЦИЯЛАУ ФУНКЦИЯСЫ ---
 def create_pdf(title, data_dict):
     buffer = BytesIO()
     p = canvas.Canvas(buffer)
     
-    # Кириллицаны қолдау үшін жүйелік қаріпті тіркейміз
-    font_path = "C:/Windows/Fonts/arial.ttf" # Windows үшін стандартты жол
-    
+    # Кириллицаны қолдау үшін қаріпті тіркеу
+    # Егер Windows болса Arial, басқа жағдайда стандартты қаріп
+    font_path = "C:/Windows/Fonts/arial.ttf"
     if os.path.exists(font_path):
         font_name = "ArialCustom"
         pdfmetrics.registerFont(TTFont(font_name, font_path))
     else:
-        font_name = "Helvetica" # Егер қаріп табылмаса, стандартқа қайтады
+        font_name = "Helvetica"
 
     p.setFont(f"{font_name}-Bold" if font_name == "Helvetica" else font_name, 16)
     p.drawString(100, 800, f"REPORT: {title}")
@@ -33,7 +33,6 @@ def create_pdf(title, data_dict):
     
     y = 750
     for key, value in data_dict.items():
-        # Қазақша мәтінді дұрыс шығару
         p.drawString(100, y, f"{key}: {value}")
         y -= 20
         
@@ -49,7 +48,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# ПАЙДАЛАНУШЫ СЕССИЯСЫ (МӘЛІМЕТТЕРДІ САҚТАУ)
+# ПАЙДАЛАНУШЫ СЕССИЯСЫ
 if 'user_name' not in st.session_state:
     st.session_state.user_name = "Директор мырза"
 
@@ -113,8 +112,7 @@ with st.sidebar:
 if selected == "🏛 Басты панель":
     st.title(f"🏛️ Қош келдіңіз, {st.session_state.user_name}!")
     
-    # PDF батырмасы (Мәліметтерді қазақшаға бағыттадым)
-    pdf = create_pdf("Басты панель", {"Пайдаланушы": st.session_state.user_name, "GPA көрсеткіші": "4.82", "Жүйе күйі": "Онлайн"})
+    pdf = create_pdf("Басты панель", {"Пайдаланушы": st.session_state.user_name, "GPA": "4.82", "Status": "Online"})
     st.download_button("📄 PDF Жүктеу", pdf, file_name="dashboard.pdf")
 
     col1, col2, col3, col4 = st.columns(4)
@@ -123,31 +121,24 @@ if selected == "🏛 Басты панель":
     with col3: st.metric("Бюджет үнемдеу", "₸ 420,000", "айына")
     with col4: st.metric("Ата-ана ризашылығы", "96%", "↑ 4%")
     st.markdown("---")
+    
     c1, c2 = st.columns([2, 1])
     with c1:
         st.subheader("📊 Академиялық көрсеткіштер")
         fig = px.bar(st.session_state.subject_data, x='Пән', y='Көрсеткіш', color='Көрсеткіш', 
                      color_continuous_scale='Viridis', text_auto=True)
         st.plotly_chart(fig, use_container_width=True)
-        with st.expander("➕ Жаңа пән қосу"):
-            new_sub = st.text_input("Пән атауы:")
-            new_val = st.slider("Көрсеткіш (0-100):", 0, 100, 85)
-            if st.button("Пәнді жаңарту"):
-                new_row = pd.DataFrame({'Пән': [new_sub], 'Көрсеткіш': [new_val]})
-                st.session_state.subject_data = pd.concat([st.session_state.subject_data, new_row]).drop_duplicates('Пән', keep='last')
-                st.rerun()
     with c2:
         st.subheader("📍 Хабарламалар")
         st.info(f"Сәлем, {st.session_state.user_name}!")
         st.error("📉 9-А: Математика деңгейі төмен.")
         st.success("🏆 Цифрлық грант ұтып алынды.")
 
-# 2. КЕСТЕ ЖӘНЕ КАДРЛАР
+# 2. КЕСТЕ ЖӘНЕ КАДРЛАР (СЕН СҰРАҒАН ЖАҢАРТЫЛҒАН БӨЛІМ)
 elif selected == "🗓 Смарт-кесте & Кадрлар":
     st.title("🗓 Кадрлар және Кесте")
     
-    # PDF батырмасы
-    pdf = create_pdf("Кадрлық есеп", {"Мұғалімдер саны": len(st.session_state.teachers_list), "Мамандығы": "Педагогика"})
+    pdf = create_pdf("Кадрлық есеп", {"Мұғалімдер саны": len(st.session_state.teachers_list)})
     st.download_button("📄 PDF Жүктеу", pdf, file_name="staff.pdf")
 
     tab1, tab2 = st.tabs(["🕒 Сабақ кестесі", "👥 Мұғалімдер базасы"])
@@ -160,30 +151,42 @@ elif selected == "🗓 Смарт-кесте & Кадрлар":
         with c_col2:
             day_select = st.selectbox("Күнді таңдаңыз:", ["Дүйсенбі", "Сейсенбі", "Сәрсенбі", "Бейсенбі", "Жұма"])
         
-        if st.button("ЖИ арқылы кестені шығару"):
-            with st.spinner('Деректер талдануда...'):
+        # Пәндерді таңдау кнопкасы/селекторы
+        st.write("📖 **Кестеге қосылатын пәндерді таңдаңыз:**")
+        available_subjects = st.session_state.subject_data['Пән'].tolist()
+        selected_subjects = st.multiselect(
+            "Пәндер тізімі (таңдалмаса, барлығы қолданылады):", 
+            options=available_subjects,
+            default=None
+        )
+
+        if st.button("ЖИ арқылы кестені құрастыру"):
+            with st.spinner('Смарт-талдау жүргізілуде...'):
                 time.sleep(1)
-                all_subjects = st.session_state.subject_data['Пән'].tolist()
-                np.random.shuffle(all_subjects)
                 
+                # Таңдалған немесе барлық пәндерді алу
+                target_list = selected_subjects if selected_subjects else available_subjects
+                working_list = target_list.copy()
+                np.random.shuffle(working_list)
+                
+                final_subjects = []
+                for i in range(6):
+                    if i < len(working_list):
+                        final_subjects.append(working_list[i])
+                    else:
+                        final_subjects.append("-")
+
                 sched = pd.DataFrame({
+                    'Сабақ №': ['1', '2', '3', '4', '5', '6'],
                     'Уақыт': ['08:30', '09:25', '10:20', '11:15', '12:10', '13:05'],
-                    f'{class_select} ({day_select})': all_subjects[:6]
+                    f'{class_select} ({day_select})': final_subjects
                 })
+                
+                st.success(f"Кесте сәтті құрастырылды!")
                 st.table(sched)
                 st.balloons()
 
     with tab2:
-        st.write("### ➕ Жаңа мұғалім қосу")
-        with st.form("teacher_form"):
-            t_name = st.text_input("Мұғалімнің аты-жөні:")
-            t_sub = st.selectbox("Пәні:", st.session_state.subject_data['Пән'].tolist())
-            t_rate = st.slider("Бастапқы рейтинг:", 1.0, 5.0, 4.5)
-            if st.form_submit_button("Базаға қосу"):
-                new_t = pd.DataFrame({'Аты-жөні': [t_name], 'Пәні': [t_sub], 'Рейтинг': [t_rate]})
-                st.session_state.teachers_list = pd.concat([st.session_state.teachers_list, new_t]).drop_duplicates()
-                st.success(f"{t_name} базаға қосылды!")
-
         st.write("### 🔎 Мұғалімдерді іздеу")
         search = st.text_input("Аты-жөні немесе пәні бойынша іздеу:")
         filtered_t = st.session_state.teachers_list[
@@ -195,36 +198,24 @@ elif selected == "🗓 Смарт-кесте & Кадрлар":
 # 3. ЖИ БОЛЖАУ
 elif selected == "🔮 ЖИ Болжау Орталығы":
     st.title("🔮 AI Predictive Center")
-    
-    # PDF батырмасы
-    pdf = create_pdf("Болжамды талдау", {"Оқушы": "Асель", "Сенімділік деңгейі": "90%+"})
-    st.download_button("📄 PDF Жүктеу", pdf, file_name="predictions.pdf")
-
     col_x, col_y = st.columns([1, 1])
     with col_x:
         st.subheader("Оқушы профилі")
         name = st.text_input("Есімі:", "Асель Мейремхан")
         attendance = st.slider("Қатысу (%)", 0, 100, 95)
-        homework = st.slider("Үй тапсырмасы (%)", 0, 100, 88)
         test = st.slider("БЖБ бағасы", 0, 100, 92)
+        final = (attendance * 0.4) + (test * 0.6)
     with col_y:
-        final = (attendance * 0.2) + (homework * 0.3) + (test * 0.5)
         st.subheader(f"Болжам: {final:.1f}%")
-        st.plotly_chart(go.Figure(go.Indicator(mode="gauge+number", value=final, gauge={'bar': {'color': "#1e3a8a"}})), use_container_width=True)
-        if final > 90: st.success(f"🚀 {name} - Көрсеткіш өте жоғары!")
+        st.plotly_chart(go.Figure(go.Indicator(mode="gauge+number", value=final)), use_container_width=True)
 
 # 4. SMART ЭКОСИСТЕМА
 elif selected == "💡 Smart Экосистема":
     st.title("💡 Ресурстарды бақылау")
-    pdf = create_pdf("Эко есеп", {"Электр үнемі": "22%", "Су шығыны": "-10%"})
-    st.download_button("📄 PDF Жүктеу", pdf, file_name="ecosystem.pdf")
-    
     c1, c2, c3 = st.columns(3)
     c1.metric("💡 Электр", "Үнем: 22%", "ЖИ")
     c2.metric("🌡️ Темп", "21.5°C", "Норма")
     c3.metric("💧 Су", "450 л", "-10%")
-    img_data = np.random.randint(0, 255, (300, 700, 3), dtype=np.uint8)
-    st.image(img_data, caption="ЖИ Аналитикасы: Қауіпсіздік деңгейі жоғары", use_container_width=True)
 
 # 5. AI КОНСУЛЬТАНТ
 elif selected == "🤖 AI Консультант":
@@ -236,9 +227,6 @@ elif selected == "🤖 AI Консультант":
         st.session_state.chat_history.append({"role": "user", "content": user_query})
         with st.chat_message("user"): st.write(user_query)
         with st.chat_message("assistant"):
-            q = user_query.lower()
-            if "кесте" in q: ans = "Кесте оңтайландырылды, Директор мырза."
-            elif "мұғалім" in q: ans = f"Базада қазір {len(st.session_state.teachers_list)} мұғалім бар."
-            else: ans = f"Құрметті {st.session_state.user_name}, бұл сұрақ бойынша деректер талдануда."
+            ans = f"Құрметті {st.session_state.user_name}, деректер талдануда."
             st.write(ans)
             st.session_state.chat_history.append({"role": "assistant", "content": ans})
