@@ -16,8 +16,6 @@ def create_pdf(title, data_dict):
     buffer = BytesIO()
     p = canvas.Canvas(buffer)
     
-    # Кириллицаны қолдау үшін қаріпті тіркеу
-    # Егер Windows болса Arial, басқа жағдайда стандартты қаріп
     font_path = "C:/Windows/Fonts/arial.ttf"
     if os.path.exists(font_path):
         font_name = "ArialCustom"
@@ -50,7 +48,7 @@ st.set_page_config(
 
 # ПАЙДАЛАНУШЫ СЕССИЯСЫ
 if 'user_name' not in st.session_state:
-    st.session_state.user_name = "Директор мырза"
+    st.session_state.user_name = "Асель"
 
 # КЕҢЕЙТІЛГЕН ПӘНДЕР ТІЗІМІ
 if 'subject_data' not in st.session_state:
@@ -106,8 +104,6 @@ with st.sidebar:
     st.write(f"📅 {datetime.now().strftime('%d.%m.%Y')}")
     st.success("🔴 Жүйе: ОНЛАЙН")
 
-# --- ФУНКЦИЯЛАР ---
-
 # 1. БАСТЫ ПАНЕЛЬ
 if selected == "🏛 Басты панель":
     st.title(f"🏛️ Қош келдіңіз, {st.session_state.user_name}!")
@@ -128,13 +124,34 @@ if selected == "🏛 Басты панель":
         fig = px.bar(st.session_state.subject_data, x='Пән', y='Көрсеткіш', color='Көрсеткіш', 
                      color_continuous_scale='Viridis', text_auto=True)
         st.plotly_chart(fig, use_container_width=True)
+        
+        # --- ЖАҢА: ПӘН ҚОСУ БАТЫРМАСЫ ---
+        st.write("---")
+        st.subheader("➕ Жаңа пән мәліметтерін енгізу")
+        new_col1, new_col2, new_col3 = st.columns([2, 1, 1])
+        with new_col1:
+            new_subject = st.text_input("Пән атауы:", placeholder="Мысалы: Философия")
+        with new_col2:
+            new_score = st.number_input("Көрсеткіш:", min_value=0, max_value=100, value=85)
+        with new_col3:
+            st.write(" ") # Бос орын теңестіру үшін
+            if st.button("Тізімге қосу"):
+                if new_subject:
+                    new_row = pd.DataFrame({'Пән': [new_subject], 'Көрсеткіш': [new_score]})
+                    st.session_state.subject_data = pd.concat([st.session_state.subject_data, new_row], ignore_index=True)
+                    st.success(f"{new_subject} сәтті қосылды!")
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.warning("Пән атауын жазыңыз!")
+
     with c2:
         st.subheader("📍 Хабарламалар")
         st.info(f"Сәлем, {st.session_state.user_name}!")
         st.error("📉 9-А: Математика деңгейі төмен.")
         st.success("🏆 Цифрлық грант ұтып алынды.")
 
-# 2. КЕСТЕ ЖӘНЕ КАДРЛАР (СЕН СҰРАҒАН ЖАҢАРТЫЛҒАН БӨЛІМ)
+# 2. КЕСТЕ ЖӘНЕ КАДРЛАР
 elif selected == "🗓 Смарт-кесте & Кадрлар":
     st.title("🗓 Кадрлар және Кесте")
     
@@ -151,7 +168,6 @@ elif selected == "🗓 Смарт-кесте & Кадрлар":
         with c_col2:
             day_select = st.selectbox("Күнді таңдаңыз:", ["Дүйсенбі", "Сейсенбі", "Сәрсенбі", "Бейсенбі", "Жұма"])
         
-        # Пәндерді таңдау кнопкасы/селекторы
         st.write("📖 **Кестеге қосылатын пәндерді таңдаңыз:**")
         available_subjects = st.session_state.subject_data['Пән'].tolist()
         selected_subjects = st.multiselect(
@@ -163,8 +179,6 @@ elif selected == "🗓 Смарт-кесте & Кадрлар":
         if st.button("ЖИ арқылы кестені құрастыру"):
             with st.spinner('Смарт-талдау жүргізілуде...'):
                 time.sleep(1)
-                
-                # Таңдалған немесе барлық пәндерді алу
                 target_list = selected_subjects if selected_subjects else available_subjects
                 working_list = target_list.copy()
                 np.random.shuffle(working_list)
