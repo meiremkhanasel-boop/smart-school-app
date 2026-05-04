@@ -219,6 +219,34 @@ elif selected == "🗓 Смарт-кесте & Кадрлар":
                 st.balloons()
 
     with tab2:
+        st.write("### 👥 Мұғалімдерді басқару")
+        
+        # --- ЖАҢА МҰҒАЛІМ ҚОСУ БӨЛІМІ ---
+        with st.expander("➕ Жаңа мұғалім қосу"):
+            t_col1, t_col2, t_col3 = st.columns([2, 2, 1])
+            with t_col1:
+                new_t_name = st.text_input("Аты-жөні:", placeholder="Мысалы: Ахметов А.")
+            with t_col2:
+                available_subs = st.session_state.subject_data['Пән'].tolist()
+                new_t_subject = st.selectbox("Пәні:", options=available_subs)
+            with t_col3:
+                new_t_rating = st.number_input("Рейтинг:", min_value=0.0, max_value=5.0, value=5.0, step=0.1)
+            
+            if st.button("Мұғалімді базаға қосу"):
+                if new_t_name:
+                    new_teacher = pd.DataFrame({
+                        'Аты-жөні': [new_t_name],
+                        'Пәні': [new_t_subject],
+                        'Рейтинг': [new_t_rating]
+                    })
+                    st.session_state.teachers_list = pd.concat([st.session_state.teachers_list, new_teacher], ignore_index=True)
+                    st.success(f"{new_t_name} сәтті қосылды!")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.warning("Мұғалімнің атын жазыңыз!")
+
+        st.markdown("---")
         st.write("### 🔎 Мұғалімдерді іздеу")
         search = st.text_input("Аты-жөні немесе пәні бойынша іздеу:")
         filtered_t = st.session_state.teachers_list[
@@ -227,7 +255,7 @@ elif selected == "🗓 Смарт-кесте & Кадрлар":
         ]
         st.dataframe(filtered_t, use_container_width=True)
 
-# 3. ЖИ БОЛЖАУ (КЕҢЕЙТІЛГЕН НҰСҚА)
+# 3. ЖИ БОЛЖАУ
 elif selected == "🔮 ЖИ Болжау Орталығы":
     st.title("🔮 AI Student Performance Analytics")
     st.markdown("---")
@@ -236,36 +264,23 @@ elif selected == "🔮 ЖИ Болжау Орталығы":
     
     with col_x:
         st.subheader("📋 Оқушы таңдау панелі")
-        # Сыныпты таңдау
         selected_class = st.selectbox("Сыныпты таңдаңыз:", list(students_db.keys()))
-        
-        # Сол сыныптың оқушылары
         available_students = list(students_db[selected_class].keys())
         selected_student = st.selectbox("Оқушының аты-жөні:", available_students)
-        
-        # Таңдалған оқушының деректері
         student_info = students_db[selected_class][selected_student]
         
         st.write("---")
         st.subheader("⚙️ Болжамды модельдеу")
-        st.write("_Бұл параметрлерді өзгерту арқылы болашақ нәтижені болжауға болады:_")
-        
-        # Интерактивті слайдерлер
         curr_attendance = st.slider("Қатысу көрсеткіші (%)", 0, 100, student_info["attendance"])
         curr_gpa = st.slider("Академиялық үлгерім (0-100)", 0, 100, student_info["gpa"])
-        
-        # Болжамдық есептеу (Алгоритм)
-        # Білімге басымдық береміз: 65% GPA + 35% Attendance
         prediction = (curr_attendance * 0.35) + (curr_gpa * 0.65)
 
     with col_y:
         st.subheader(f"📊 Болжамдық есеп: {selected_student}")
-        
-        # Визуалды индикатор
         fig = go.Figure(go.Indicator(
             mode="gauge+number+delta",
             value=prediction,
-            delta={'reference': 85}, # Орташа мектеп деңгейімен салыстыру
+            delta={'reference': 85},
             domain={'x': [0, 1], 'y': [0, 1]},
             title={'text': "Жалпы үлгерім индексі", 'font': {'size': 18}},
             gauge={
@@ -289,7 +304,6 @@ elif selected == "🔮 ЖИ Болжау Орталығы":
         fig.update_layout(height=350)
         st.plotly_chart(fig, use_container_width=True)
         
-        # ЖИ ТҰЖЫРЫМДАМАСЫ
         st.markdown("### 🤖 ЖИ Сараптамасы:")
         if prediction >= 90:
             st.success(f"**ҚОРЫТЫНДЫ:** {selected_student} жоғары академиялық потенциалға ие. Жобалық жұмыстарға тарту ұсынылады.")
