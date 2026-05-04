@@ -316,11 +316,39 @@ elif selected == "🔮 ЖИ Болжау Орталығы":
 
 # 4. SMART ЭКОСИСТЕМА
 elif selected == "💡 Smart Экосистема":
-    st.title("💡 Ресурстарды бақылау")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("💡 Электр", "Үнем: 22%", "ЖИ")
-    c2.metric("🌡️ Темп", "21.5°C", "Норма")
-    c3.metric("💧 Су", "450 л", "-10%")
+    st.title("💡 Ресурстарды бақылау және Экология")
+    
+    col_res1, col_res2, col_res3 = st.columns(3)
+    col_res1.metric("💡 Электр", "Үнем: 22%", "ЖИ Бақылау")
+    col_res2.metric("🌡️ Орташа темп.", "21.5°C", "Қалыпты")
+    col_res3.metric("💧 Су шығыны", "450 л", "-12%")
+    
+    st.markdown("---")
+    
+    st.subheader("🍃 Мектеп атмосферасы мен Экология")
+    col_air, col_waste = st.columns(2)
+    
+    with col_air:
+        st.write("### 🌬️ Ауа сапасы (CO2)")
+        co2_val = 720 
+        st.progress(co2_val / 1200)
+        if co2_val < 800:
+            st.success(f"✅ Деңгей: {co2_val} ppm. Ауа таза!")
+        else:
+            st.warning(f"⚠️ Деңгей: {co2_val} ppm. Желдету ұсынылады!")
+            
+    with col_waste:
+        st.write("### ♻️ Қалдықтарды сұрыптау (кг)")
+        waste_df = pd.DataFrame({
+            'Түрі': ['Қағаз', 'Пластик', 'Басқа'],
+            'Көлемі': [55, 20, 10]
+        })
+        fig_waste = px.pie(waste_df, values='Көлемі', names='Түрі', 
+                           hole=0.4, color_discrete_sequence=px.colors.sequential.Tealgrn)
+        fig_waste.update_layout(height=250, margin=dict(l=0, r=0, t=0, b=0))
+        st.plotly_chart(fig_waste, use_container_width=True)
+
+    st.info("💡 **ЖИ Кеңесі:** Соңғы 2 сағатта 2-қабатта жарық босқа қосулы тұр. Автоматты өшіру ұсынылады.")
 
 # 5. AI КОНСУЛЬТАНТ
 elif selected == "🤖 AI Консультант":
