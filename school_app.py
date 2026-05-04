@@ -16,6 +16,7 @@ def create_pdf(title, data_dict):
     buffer = BytesIO()
     p = canvas.Canvas(buffer)
     
+    # Қазақ тіліне арналған қаріп (Arial қолданылады)
     font_path = "C:/Windows/Fonts/arial.ttf"
     if os.path.exists(font_path):
         font_name = "ArialCustom"
@@ -68,7 +69,7 @@ if 'teachers_list' not in st.session_state:
         'Рейтинг': [4.9, 4.7, 4.9, 4.2]
     })
 
-# --- КЕҢЕЙТІЛГЕН ОҚУШЫЛАР МӘЛІМЕТТЕРІ ---
+# КЕҢЕЙТІЛГЕН ОҚУШЫЛАР МӘЛІМЕТТЕРІ
 students_db = {
     "9-А": {
         "Аманжол Ернар": {"attendance": 88, "gpa": 75},
@@ -135,16 +136,16 @@ with st.sidebar:
     st.write(f"📅 {datetime.now().strftime('%d.%m.%Y')}")
     st.success("🔴 Жүйе: ОНЛАЙН")
 
-# 1. БАСТЫ ПАНЕЛЬ
+# --- 1. БАСТЫ ПАНЕЛЬ ---
 if selected == "🏛 Басты панель":
     st.title(f"🏛️ Қош келдіңіз, {st.session_state.user_name}!")
     
     pdf = create_pdf("Басты панель", {"Пайдаланушы": st.session_state.user_name, "GPA": "4.82", "Status": "Online"})
     st.download_button("📄 PDF Жүктеу", pdf, file_name="dashboard.pdf")
 
-    col1, col2, col3, col4 = st.columns(4)
-    with col2: st.metric("Білім сапасы (GPA)", "4.82", "↑ 0.15")
-    with col4: st.metric("Ата-ана ризашылығы", "96%", "↑ 4%")
+    col1, col2 = st.columns(2)
+    with col1: st.metric("Білім сапасы (GPA)", "4.82", "↑ 0.15")
+    with col2: st.metric("Ата-ана ризашылығы", "96%", "↑ 4%")
     st.markdown("---")
     
     c1, c2 = st.columns([2, 1])
@@ -155,14 +156,14 @@ if selected == "🏛 Басты панель":
         st.plotly_chart(fig, use_container_width=True)
         
         st.write("---")
-        st.subheader("➕ Жаңа пән мәліметтерін енгізу")
-        new_col1, new_col2, new_col3 = st.columns([2, 1, 1])
-        with new_col1:
+        
+        # РЕДАКТОРЛАУ БӨЛІМІ (ҚОСУ ЖӘНЕ ӨШІРУ)
+        edit_col1, edit_col2 = st.columns(2)
+        
+        with edit_col1:
+            st.subheader("➕ Жаңа пән қосу")
             new_subject = st.text_input("Пән атауы:", placeholder="Мысалы: Философия")
-        with new_col2:
-            new_score = st.number_input("Көрсеткіш:", min_value=0, max_value=100, value=85)
-        with new_col3:
-            st.write(" ")
+            new_score = st.number_input("Көрсеткіш:", min_value=0, max_value=100, value=85, key="add_score")
             if st.button("Тізімге қосу"):
                 if new_subject:
                     new_row = pd.DataFrame({'Пән': [new_subject], 'Көрсеткіш': [new_score]})
@@ -172,6 +173,16 @@ if selected == "🏛 Басты панель":
                     st.rerun()
                 else:
                     st.warning("Пән атауын жазыңыз!")
+                    
+        with edit_col2:
+            st.subheader("🗑️ Пәнді өшіру")
+            subject_to_delete = st.selectbox("Өшірілетін пәнді таңдаңыз:", options=st.session_state.subject_data['Пән'].tolist())
+            st.write(" ") # Арақашықтық үшін
+            if st.button("Таңдалған пәнді жою"):
+                st.session_state.subject_data = st.session_state.subject_data[st.session_state.subject_data['Пән'] != subject_to_delete]
+                st.error(f"{subject_to_delete} тізімнен өшірілді!")
+                time.sleep(1)
+                st.rerun()
 
     with c2:
         st.subheader("📍 Хабарламалар")
@@ -179,7 +190,7 @@ if selected == "🏛 Басты панель":
         st.error("📉 9-А: Математика деңгейі төмен.")
         st.success("🏆 Цифрлық грант ұтып алынды.")
 
-# 2. КЕСТЕ ЖӘНЕ КАДРЛАР
+# --- 2. КЕСТЕ ЖӘНЕ КАДРЛАР ---
 elif selected == "🗓 Смарт-кесте & Кадрлар":
     st.title("🗓 Кадрлар және Кесте")
     pdf = create_pdf("Кадрлық есеп", {"Мұғалімдер саны": len(st.session_state.teachers_list)})
@@ -218,7 +229,6 @@ elif selected == "🗓 Смарт-кесте & Кадрлар":
 
     with tab2:
         st.write("### 👥 Мұғалімдерді басқару")
-        
         with st.expander("➕ Жаңа мұғалім қосу"):
             t_col1, t_col2, t_col3 = st.columns([2, 2, 1])
             with t_col1:
@@ -252,13 +262,12 @@ elif selected == "🗓 Смарт-кесте & Кадрлар":
         ]
         st.dataframe(filtered_t, use_container_width=True)
 
-# 3. ЖИ БОЛЖАУ
+# --- 3. ЖИ БОЛЖАУ ---
 elif selected == "🔮 ЖИ Болжау Орталығы":
     st.title("🔮 AI Student Performance Analytics")
     st.markdown("---")
     
     col_x, col_y = st.columns([1, 1])
-    
     with col_x:
         st.subheader("📋 Оқушы таңдау панелі")
         selected_class = st.selectbox("Сыныпты таңдаңыз:", list(students_db.keys()))
@@ -311,11 +320,10 @@ elif selected == "🔮 ЖИ Болжау Орталығы":
         else:
             st.error(f"**ҚАТЕР:** Төмен нәтиже. Ата-анамен психологиялық кеңес өткізу қажет.")
 
-# 4. SMART ЭКОСИСТЕМА (ИНТЕРАКТИВТІ НҰСҚА)
+# --- 4. SMART ЭКОСИСТЕМА ---
 elif selected == "💡 Smart Экосистема":
     st.title("💡 Ресурстарды бақылау және Экология")
     
-    # --- ЖАҢА: ПАРАМЕТРЛЕРДІ БАСҚАРУ ПАНЕЛІ ---
     with st.expander("⚙️ Экосистема параметрлерін реттеу"):
         set_col1, set_col2, set_col3 = st.columns(3)
         with set_col1:
@@ -329,15 +337,12 @@ elif selected == "💡 Smart Экосистема":
             plastic_w = st.number_input("Пластик қалдығы (кг)", 0, 200, 20)
 
     st.markdown("---")
-
-    # Метрикалар
     col_res1, col_res2, col_res3 = st.columns(3)
     col_res1.metric("💡 Электр", f"Үнем: {power_save}%", "ЖИ Бақылау")
     col_res2.metric("🌡️ Орташа темп.", f"{temp_val}°C", "Қалыпты" if 18 <= temp_val <= 24 else "Ауытқу")
     col_res3.metric("💧 Су шығыны", f"{water_cons} л", f"{450 - water_cons} л айырма")
     
     st.markdown("---")
-    
     st.subheader("🍃 Мектеп атмосферасы мен Экология")
     col_air, col_waste = st.columns(2)
     
@@ -362,11 +367,10 @@ elif selected == "💡 Smart Экосистема":
         fig_waste.update_layout(height=250, margin=dict(l=0, r=0, t=0, b=0))
         st.plotly_chart(fig_waste, use_container_width=True)
 
-    # Динамикалық ЖИ кеңесі
     efficiency = (power_save + (100 - (co2_input/15)) + (100 - (abs(21-temp_val)*10))) / 3
     st.info(f"💡 **ЖИ Кеңесі:** Соңғы деректер бойынша мектептің экологиялық тиімділігі {max(0, min(100, efficiency)):.1f}% құрады.")
 
-# 5. AI КОНСУЛЬТАНТ
+# --- 5. AI КОНСУЛЬТАНТ ---
 elif selected == "🤖 AI Консультант":
     st.title(f"🤖 {st.session_state.user_name} үшін ЖИ-Көмекші")
     if "chat_history" not in st.session_state: st.session_state.chat_history = []
@@ -376,6 +380,6 @@ elif selected == "🤖 AI Консультант":
         st.session_state.chat_history.append({"role": "user", "content": user_query})
         with st.chat_message("user"): st.write(user_query)
         with st.chat_message("assistant"):
-            ans = f"Құрметті {st.session_state.user_name}, деректер талдануда."
+            ans = f"Құрметті {st.session_state.user_name}, деректер талдануда. Сіздің '{user_query}' сұрағыңыз бойынша есеп дайындалуда."
             st.write(ans)
             st.session_state.chat_history.append({"role": "assistant", "content": ans})
