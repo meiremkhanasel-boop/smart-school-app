@@ -48,7 +48,7 @@ st.set_page_config(
 
 # ПАЙДАЛАНУШЫ СЕССИЯСЫ
 if 'user_name' not in st.session_state:
-    st.session_state.user_name = "Асель"
+    st.session_state.user_name = "Директор мырза"
 
 # КЕҢЕЙТІЛГЕН ПӘНДЕР ТІЗІМІ
 if 'subject_data' not in st.session_state:
