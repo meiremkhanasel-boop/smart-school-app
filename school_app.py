@@ -262,6 +262,23 @@ elif selected == "🗓 Смарт-кесте & Кадрлар":
         ]
         st.dataframe(filtered_t, use_container_width=True)
 
+        # МҰҒАЛІМДІ ӨШІРУ БӨЛІМІ (ЖАҢА)
+        st.markdown("---")
+        st.write("### 🗑️ Мұғалімді базадан өшіру")
+        del_col1, del_col2 = st.columns([2, 1])
+        with del_col1:
+            teacher_to_delete = st.selectbox("Өшірілетін мұғалімді таңдаңыз:", 
+                                             options=st.session_state.teachers_list['Аты-жөні'].tolist())
+        with del_col2:
+            st.write(" ") # Визуалды теңестіру
+            if st.button("Таңдалғанды жою"):
+                st.session_state.teachers_list = st.session_state.teachers_list[
+                    st.session_state.teachers_list['Аты-жөні'] != teacher_to_delete
+                ]
+                st.error(f"{teacher_to_delete} базадан өшірілді!")
+                time.sleep(1)
+                st.rerun()
+
 # --- 3. ЖИ БОЛЖАУ ---
 elif selected == "🔮 ЖИ Болжау Орталығы":
     st.title("🔮 AI Student Performance Analytics")
