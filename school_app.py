@@ -143,9 +143,7 @@ if selected == "🏛 Басты панель":
     st.download_button("📄 PDF Жүктеу", pdf, file_name="dashboard.pdf")
 
     col1, col2, col3, col4 = st.columns(4)
-    with col1: st.metric("Жалпы контингент", "1,520", "↑ 2.1%")
     with col2: st.metric("Білім сапасы (GPA)", "4.82", "↑ 0.15")
-    with col3: st.metric("Бюджет үнемдеу", "₸ 420,000", "айына")
     with col4: st.metric("Ата-ана ризашылығы", "96%", "↑ 4%")
     st.markdown("---")
     
