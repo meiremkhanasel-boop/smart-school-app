@@ -400,3 +400,4 @@ elif selected == "🤖 AI Консультант":
             ans = f"Құрметті {st.session_state.user_name}, деректер талдануда. Сіздің '{user_query}' сұрағыңыз бойынша есеп дайындалуда."
             st.write(ans)
             st.session_state.chat_history.append({"role": "assistant", "content": ans})
+            
